@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cafetify</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* Definisi Warna Custom (Spotify-like) */
+        :root {
+            --color-primary-green: #1DB954;
+            --color-dark-bg: #121212;
+            --color-card-bg: #181818;
+            --color-card-hover: #282828;
+            --color-text-light: #FFFFFF;
+            --color-text-secondary: #B3B3B3;
+        }
+
+        /* --- INTEGRASI FONT LOKAL --- */
+        @font-face {
+            font-family: 'Gotham';
+            src: url('./fonts/GothamBook.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Gotham';
+            src: url('./fonts/GothamBold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        body {
+            font-family: 'Gotham', sans-serif;
+            background-color: var(--color-dark-bg);
+            color: var(--color-text-light);
+        }
+        
+        .font-bold, .font-extrabold { font-weight: 700; }
+
+        /* Efek Hover Card seperti Spotify */
+        .cafe-card {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .cafe-card:hover {
+            background-color: var(--color-card-hover);
+            transform: translateY(-4px);
+        }
+
+        /* Scrollbar Kustom */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-green); }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- Header -->
+    <header class="bg-black bg-opacity-50 backdrop-blur-md sticky top-0 z-40 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl sm:text-3xl font-bold text-[var(--color-primary-green)] tracking-tight">
+                <i class="fas fa-mug-hot mr-2"></i>Cafetify 
+                <span class="text-sm font-normal text-white opacity-70 ml-1"></span>
+            </h1>
+            <div>
+                <button class="bg-[var(--color-primary-green)] hover:bg-green-400 text-black font-bold py-2 px-6 rounded-full shadow-lg transform transition hover:scale-105" onclick="openModal()">
+                    Tambah Kafe
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Filter Section (Lebih Ringkas) -->
+        <div class="flex flex-col md:flex-row gap-4 mb-10 justify-between items-center">
+            <div class="relative w-full md:w-1/3">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" placeholder="Cari koleksimu..." class="w-full py-2 pl-10 pr-4 bg-[#2a2a2a] border-none rounded-full text-white focus:ring-2 focus:ring-[var(--color-primary-green)]">
+            </div>
+            
+            <div class="flex gap-3 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+                <button class="px-4 py-1 bg-[#333] rounded-full text-sm hover:bg-[#444] whitespace-nowrap transition">Semua</button>
+                <button class="px-4 py-1 bg-[#333] rounded-full text-sm hover:bg-[#444] whitespace-nowrap transition">Kopi Strong</button>
+                <button class="px-4 py-1 bg-[#333] rounded-full text-sm hover:bg-[#444] whitespace-nowrap transition">Sunyi</button>
+                <button class="px-4 py-1 bg-[#333] rounded-full text-sm hover:bg-[#444] whitespace-nowrap transition">Aesthetic</button>
+            </div>
+        </div>
+
+        <!-- Grid Daftar Kafe (Minimalist View) -->
+        <h2 class="text-xl font-bold mb-6 text-white">Koleksi Terbaru</h2>
+        <div id="cafe-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Kartu akan di-render di sini -->
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. MODAL DETAIL KAFE (Tampilan Detail yang Anda Minta) -->
+    <div id="detail-modal" class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-[#181818] rounded-xl w-full max-w-2xl shadow-2xl border border-[#333] flex flex-col max-h-[90vh] overflow-hidden relative">
+            
+            <!-- Header Modal (Gambar/Judul) -->
+            <div class="bg-gradient-to-b from-[#2a2a2a] to-[#181818] p-8 pb-4">
+                <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-[var(--color-primary-green)] text-xs font-bold tracking-wider uppercase mb-1">CAFE DETAILS</p>
+                        <h2 id="detail-name" class="text-4xl font-bold text-white mb-2">Nama Kafe</h2>
+                        <p id="detail-address" class="text-gray-400 text-sm"><i class="fas fa-map-marker-alt mr-2"></i>Alamat Kafe</p>
+                    </div>
+                    <div class="text-right">
+                        <div id="detail-score-big" class="text-5xl font-bold text-[var(--color-primary-green)]">0.0</div>
+                        <div class="text-xs text-gray-500 mt-1">OVERALL RATING</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body Modal (Scrollable) -->
+            <div class="p-8 pt-4 overflow-y-auto custom-scrollbar space-y-6">
+                
+                <!-- Tags -->
+                <div id="detail-tags" class="flex flex-wrap gap-2"></div>
+
+                <!-- Grid Statistik -->
+                <div class="grid grid-cols-2 gap-6 p-4 bg-[#222] rounded-lg border border-[#333]">
+                    <!-- Ambience -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-300">Ambience</span>
+                            <span id="detail-ambience-val" class="text-white font-bold">0/5</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="detail-ambience-bar" class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <!-- Service -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-300">Service</span>
+                            <span id="detail-service-val" class="text-white font-bold">0/5</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="detail-service-bar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                     <!-- Menu -->
+                     <div>
+                        <div class="text-sm text-gray-300 mb-1">Menu Variety</div>
+                        <div id="detail-menu" class="text-white font-bold text-lg">?</div>
+                    </div>
+                    <!-- Price -->
+                    <div>
+                        <div class="text-sm text-gray-300 mb-1">Price Level</div>
+                        <div id="detail-price" class="text-[var(--color-primary-green)] font-bold text-lg">?</div>
+                    </div>
+                </div>
+
+                <!-- Notes / Review -->
+                <div>
+                    <h3 class="text-white font-bold mb-2">Catatan Pribadi</h3>
+                    <p id="detail-notes" class="text-gray-300 text-sm leading-relaxed italic border-l-4 border-[var(--color-primary-green)] pl-4 bg-[#222] py-3 pr-3 rounded-r-lg">
+                        Tidak ada catatan.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 pt-4 border-t border-[#333]">
+                    <button class="flex-1 bg-[#333] hover:bg-[#444] text-white py-3 rounded-full font-bold transition text-sm" onclick="alert('Buka Google Maps...')">
+                        <i class="fas fa-location-arrow mr-2"></i>Lihat di Peta
+                    </button>
+                    <button class="flex-1 border border-gray-600 hover:border-white text-white py-3 rounded-full font-bold transition text-sm" onclick="alert('Mode Edit...')">
+                        Edit Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MODAL TAMBAH KAFE (Form Input) -->
+    <div id="add-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50 p-4">
+        <div class="bg-[#181818] rounded-xl w-full max-w-lg shadow-2xl border border-[#333] p-6 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-2xl font-bold text-white mb-6">Tambah Kafe Baru</h3>
+            
+            <form id="add-cafe-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nama Kafe</label>
+                    <input type="text" class="w-full bg-[#2a2a2a] border border-transparent focus:border-[var(--color-primary-green)] rounded p-3 text-white outline-none transition" placeholder="Nama Kafe..." required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Alamat</label>
+                    <input type="text" class="w-full bg-[#2a2a2a] border border-transparent focus:border-[var(--color-primary-green)] rounded p-3 text-white outline-none transition" placeholder="Lokasi singkat..." required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Ambience (1-5)</label>
+                        <input type="number" min="1" max="5" class="w-full bg-[#2a2a2a] rounded p-3 text-white outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Service (1-5)</label>
+                        <input type="number" min="1" max="5" class="w-full bg-[#2a2a2a] rounded p-3 text-white outline-none" required>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Menu</label>
+                        <select class="w-full bg-[#2a2a2a] rounded p-3 text-white outline-none">
+                            <option>Minim</option>
+                            <option>Variatif</option>
+                            <option>Lengkap</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Harga</label>
+                        <select class="w-full bg-[#2a2a2a] rounded p-3 text-white outline-none">
+                            <option>Murah</option>
+                            <option>Sedang</option>
+                            <option>Mahal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Catatan</label>
+                    <textarea rows="3" class="w-full bg-[#2a2a2a] rounded p-3 text-white outline-none" placeholder="Review jujur..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeModal()" class="px-6 py-2 text-gray-400 hover:text-white font-bold transition">Batal</button>
+                    <button type="submit" class="px-8 py-2 bg-[var(--color-primary-green)] text-black rounded-full font-bold hover:scale-105 transition">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIKA JAVASCRIPT ---
+
+        // Data Dummy (Nanti diganti dengan fetch dari API Golang)
+        const dummyCafes = [
+            {
+                id: 1,
+                name: "Kopi Senja Mentari",
+                address: "Jl. Raya ITS No. 123",
+                latitude: -7.2871, 
+                ratings: [
+                    {
+                        ambience_rating: 5,
+                        service_rating: 4,
+                        price_level: "Sedang",
+                        menu_variety: "Variatif",
+                        notes: "Vibesnya enak banget buat deep talk atau nugas malam. Kopinya agak asam tapi pastry-nya juara.",
+                    }
+                ],
+                tags: [
+                    { name: "Aesthetic" },
+                    { name: "Nugas Friendly" },
+                    { name: "Outdoor" }
+                ]
+            },
+            {
+                id: 2,
+                name: "Warung Kopi Strong",
+                address: "Gg. Buntu No. 9",
+                ratings: [
+                    {
+                        ambience_rating: 2,
+                        service_rating: 5,
+                        price_level: "Murah",
+                        menu_variety: "Minim",
+                        notes: "Jangan harap AC dingin, tapi kopi hitamnya bikin melek 3 hari. Penjualnya ramah banget.",
+                    }
+                ],
+                tags: [
+                    { name: "Kopi Strong" },
+                    { name: "Murah" }
+                ]
+            },
+            {
+                id: 3,
+                name: "Library Cafe",
+                address: "Pusat Kota",
+                ratings: [
+                    {
+                        ambience_rating: 5,
+                        service_rating: 3,
+                        price_level: "Mahal",
+                        menu_variety: "Lengkap",
+                        notes: "Hening total. Dilarang berisik. Cocok buat skripsian.",
+                    }
+                ],
+                tags: [
+                    { name: "Sunyi" },
+                    { name: "AC Dingin" }
+                ]
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDashboard(dummyCafes);
+        });
+
+        // 1. RENDER DASHBOARD (MINIMALIST VIEW)
+        const renderDashboard = (cafes) => {
+            const container = document.getElementById('cafe-list');
+            container.innerHTML = ''; 
+
+            cafes.forEach(cafe => {
+                const latest = cafe.ratings[cafe.ratings.length - 1];
+                const avg = (latest.ambience_rating + latest.service_rating) / 2;
+
+                // Kartu Minimalis
+                const cardHtml = `
+                    <div class="bg-[#181818] p-4 rounded-lg cafe-card cursor-pointer group relative" onclick="openDetailModal(${cafe.id})">
+                        <!-- Placeholder Image -->
+                        <div class="bg-[#333] h-40 w-full rounded-md mb-4 flex items-center justify-center shadow-lg group-hover:shadow-2xl transition">
+                            <i class="fas fa-coffee text-4xl text-gray-600 group-hover:text-[var(--color-primary-green)] transition"></i>
+                        </div>
+                        
+                        <h3 class="font-bold text-white truncate text-lg mb-1">${cafe.name}</h3>
+                        <p class="text-gray-400 text-sm truncate mb-3">${cafe.address}</p>
+                        
+                        <div class="flex items-center gap-2 mb-3">
+                             ${cafe.tags.slice(0, 2).map(tag => `<span class="text-[10px] uppercase tracking-wide bg-[#2a2a2a] text-gray-300 px-2 py-1 rounded">${tag.name}</span>`).join('')}
+                             ${cafe.tags.length > 2 ? `<span class="text-[10px] text-gray-500">+${cafe.tags.length - 2}</span>` : ''}
+                        </div>
+
+                        <!-- Score Badge Floating -->
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-70 backdrop-blur-sm rounded-full px-3 py-1 flex items-center shadow-lg">
+                            <i class="fas fa-star text-[var(--color-primary-green)] text-xs mr-1"></i>
+                            <span class="font-bold text-white text-sm">${avg.toFixed(1)}</span>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        };
+
+        // 2. LOGIKA DETAIL MODAL
+        function openDetailModal(id) {
+            const cafe = dummyCafes.find(c => c.id === id);
+            if (!cafe) return;
+
+            const latest = cafe.ratings[cafe.ratings.length - 1];
+            const avg = (latest.ambience_rating + latest.service_rating) / 2;
+
+            // Isi Data ke Modal
+            document.getElementById('detail-name').innerText = cafe.name;
+            document.getElementById('detail-address').innerHTML = `<i class="fas fa-map-marker-alt mr-2"></i>${cafe.address}`;
+            document.getElementById('detail-score-big').innerText = avg.toFixed(1);
+            document.getElementById('detail-notes').innerText = latest.notes || "Tidak ada catatan.";
+            
+            // Isi Statistik Bar
+            document.getElementById('detail-ambience-val').innerText = `${latest.ambience_rating}/5`;
+            document.getElementById('detail-ambience-bar').style.width = `${(latest.ambience_rating/5)*100}%`;
+            
+            document.getElementById('detail-service-val').innerText = `${latest.service_rating}/5`;
+            document.getElementById('detail-service-bar').style.width = `${(latest.service_rating/5)*100}%`;
+
+            document.getElementById('detail-menu').innerText = latest.menu_variety;
+            document.getElementById('detail-price').innerText = latest.price_level;
+
+            // Isi Tags di Modal
+            const tagsContainer = document.getElementById('detail-tags');
+            tagsContainer.innerHTML = cafe.tags.map(tag => 
+                `<span class="px-3 py-1 bg-[var(--color-primary-green)] bg-opacity-20 text-[var(--color-primary-green)] rounded-full text-xs font-bold border border-[var(--color-primary-green)] border-opacity-30">${tag.name}</span>`
+            ).join('');
+
+            // Tampilkan Modal
+            document.getElementById('detail-modal').classList.remove('hidden');
+            document.getElementById('detail-modal').classList.add('flex');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+            document.getElementById('detail-modal').classList.remove('flex');
+        }
+
+        // 3. LOGIKA ADD MODAL
+        function openModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+            document.getElementById('add-modal').classList.add('flex');
+        }
+        function closeModal() {
+            document.getElementById('add-modal').classList.add('hidden');
+            document.getElementById('add-modal').classList.remove('flex');
+        }
+
+    </script>
+</body>
+</html>
