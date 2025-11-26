@@ -16,9 +16,20 @@ func RequireAuth(c *gin.Context) {
 	// 1. Ambil Token dari Cookie
 	tokenString, err := c.Cookie("Authorization")
 
+	// 1,5. Kalau di Cookie kosong, coba ambil dari Header (Backup Plan)
+	// React biasanya kirim header: "Authorization: Bearer <token>" (karena react sm golang beda port, ada kemungkinan conflict CORS)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Anda belum login (Token tidak ditemukan)"})
-		return
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token tidak ditemukan"})
+			return
+		}
+		// Hapus kata "Bearer " di depan token jika ada
+		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			tokenString = authHeader[7:]
+		} else {
+			tokenString = authHeader
+		}
 	}
 
 	// 2. Validasi/Decode Token
