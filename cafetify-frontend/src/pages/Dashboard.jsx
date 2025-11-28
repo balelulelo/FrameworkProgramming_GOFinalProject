@@ -28,7 +28,7 @@ const Dashboard = () => {
       try {
         // PERUBAHAN 1: URL disesuaikan dengan backend (/api/cafes)
         // PERUBAHAN 2: Kirim Header Authorization
-        const response = await axios.get('http://localhost:8080/api/cafes', {
+        const response = await axios.get('http://localhost:8080/cafes', {
           headers: {
             Authorization: token // Kirim token JWT ke Go
           }

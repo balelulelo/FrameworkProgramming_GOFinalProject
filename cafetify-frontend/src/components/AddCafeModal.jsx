@@ -35,7 +35,7 @@ const AddCafeModal = ({ onClose, onSuccess }) => {
             };
 
             // URL sesuai endpoint Go yang menggunakan Group "/protected"
-            await axios.post('http://localhost:8080/protected/cafe', payload, {
+            await axios.post('http://localhost:8080/protected/cafes', payload, {
                 headers: { Authorization: token } // Kirim token di header
             });
             
