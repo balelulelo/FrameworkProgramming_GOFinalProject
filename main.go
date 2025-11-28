@@ -43,10 +43,11 @@ func main() {
 	protected := r.Group("/protected")
 	protected.Use(middleware.RequireAuth)
 	{
-		protected.POST("/cafe", controllers.CreateCafe)
-		protected.POST("/cafe/:id/rate", controllers.RateCafe)
-		protected.PUT("/cafe/:id", controllers.UpdateCafe)
-		protected.DELETE("/cafe/:id", controllers.DeleteCafe)
+		protected.POST("/cafes", controllers.CreateCafe)
+		protected.GET("/cafes", controllers.GetAllCafes)
+		protected.PUT("/cafes/:id", controllers.UpdateCafe)
+		protected.DELETE("/cafes/:id", controllers.DeleteCafe)
+		protected.POST("/cafes/:id/rate", controllers.RateCafe)
 	}
 
 	r.Run()
