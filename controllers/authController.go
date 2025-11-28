@@ -88,7 +88,7 @@ func Login(c *gin.Context) {
 	// 4. Buat JWT Token (Kunci Akses)
 	// Token ini berlaku selama 30 hari
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.ID,                            // Subject (ID User)
+		"sub": user.ID,                                    // Subject (ID User)
 		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(), // Kadaluarsa 30 hari
 	})
 
@@ -109,5 +109,38 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login berhasil!",
 		"token":   tokenString, // Kita kirim juga di body untuk testing Postman
+	})
+}
+
+// FITUR 3: view own profile
+func GetProfile(c *gin.Context) {
+	user, _ := c.Get("user") // get user from middleware
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+// FITUR 4: update profile
+func UpdateProfile(c *gin.Context) {
+	userContext, _ := c.Get("user")
+	currentUser := userContext.(models.User)
+
+	var body struct {
+		Username string
+		Email    string
+	}
+
+	if c.Bind(&body) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid"})
+		return
+	}
+
+	// Update data
+	initializers.DB.Model(&currentUser).Updates(models.User{
+		Username: body.Username,
+		Email:    body.Email,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Profil berhasil diperbarui",
+		"user":    currentUser,
 	})
 }

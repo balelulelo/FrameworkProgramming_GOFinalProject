@@ -32,6 +32,8 @@ func main() {
 	}))
 	// --------------------------------------
 
+	// route public
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Pong! Cafetify Backend Ready!"})
 	})
@@ -40,14 +42,21 @@ func main() {
 	r.POST("/login", controllers.Login)
 	r.GET("/cafes", controllers.GetAllCafes)
 
+	// ---------- route protected
+
 	protected := r.Group("/protected")
 	protected.Use(middleware.RequireAuth)
 	{
+		//route for cafe
 		protected.POST("/cafes", controllers.CreateCafe)
 		protected.GET("/cafes", controllers.GetAllCafes)
 		protected.PUT("/cafes/:id", controllers.UpdateCafe)
 		protected.DELETE("/cafes/:id", controllers.DeleteCafe)
 		protected.POST("/cafes/:id/rate", controllers.RateCafe)
+
+		// route for profile
+		protected.GET("/profile", controllers.GetProfile)
+		protected.PUT("/profile", controllers.UpdateProfile)
 	}
 
 	r.Run()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,27 +14,28 @@ import (
 )
 
 func RequireAuth(c *gin.Context) {
-	// 1. Ambil Token dari Cookie
-	tokenString, err := c.Cookie("Authorization")
+	// 1. Coba ambil token dari Cookie
+	tokenString, _ := c.Cookie("Authorization")
 
-	// 1,5. Kalau di Cookie kosong, coba ambil dari Header (Backup Plan)
-	// React biasanya kirim header: "Authorization: Bearer <token>" (karena react sm golang beda port, ada kemungkinan conflict CORS)
-	if err != nil {
+	// ika di Cookie kosong, coba ambil dari Header Authorization
+	if tokenString == "" {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token tidak ditemukan"})
-			return
-		}
-		// Hapus kata "Bearer " di depan token jika ada
-		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-			tokenString = authHeader[7:]
-		} else {
-			tokenString = authHeader
+		// Format header biasanya: "Bearer <token>" atau langsung "<token>"
+		// Kita ambil tokennya saja
+		if authHeader != "" {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			tokenString = strings.TrimSpace(tokenString)
 		}
 	}
 
+	// jika masih kosong, tolak akses
+	if tokenString == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Token tidak ditemukan"})
+		return
+	}
+
 	// 2. Validasi/Decode Token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Pastikan metode signing-nya benar (HMAC)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

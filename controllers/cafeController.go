@@ -2,28 +2,48 @@ package controllers
 
 import (
 	"net/http"
-	"strings" 
-	"strconv" 
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rizqy/cafetify/initializers"
 	"github.com/rizqy/cafetify/models"
 )
 
-// CREATE CAFE (Dibuat Sebelumnya)
+// 1. CREATE CAFE
+
 func CreateCafe(c *gin.Context) {
-	// ... (Kode CreateCafe sama seperti sebelumnya)
+
 	var body struct {
-		Name      string
-		Address   string
-		Latitude  float64
-		Longitude float64
+		Name      string  `json:"name" binding:"required"`
+		Address   string  `json:"address" binding:"required"`
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+
+		AmbienceRating int    `json:"ambience_rating" binding:"required"`
+		ServiceRating  int    `json:"service_rating" binding:"required"`
+		PriceLevel     string `json:"price_level" binding:"required"`
+		MenuVariety    string `json:"menu_variety" binding:"required"`
+		Notes          string `json:"notes"`
+		TagsInput      string `json:"tags_input"`
 	}
 
-	if c.Bind(&body) != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal membaca input data"})
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Input data tidak lengkap: " + err.Error()})
 		return
 	}
+
+	// get user ID (the one who added the new cafe)
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID := user.(models.User).ID
+
+	// --- DATABASE TRANSACTION ---
+
+	tx := initializers.DB.Begin()
 
 	cafe := models.Cafe{
 		Name:      body.Name,
@@ -32,23 +52,71 @@ func CreateCafe(c *gin.Context) {
 		Longitude: body.Longitude,
 	}
 
-	result := initializers.DB.Create(&cafe)
-
-	if result.Error != nil {
+	if err := tx.Create(&cafe).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan kafe"})
 		return
 	}
 
+	// save cafe rating
+	rating := models.PersonalRating{
+		UserID:         userID,
+		CafeID:         cafe.ID, // use the new CAFE id
+		AmbienceRating: body.AmbienceRating,
+		ServiceRating:  body.ServiceRating,
+		PriceLevel:     body.PriceLevel,
+		MenuVariety:    body.MenuVariety,
+		Notes:          body.Notes,
+	}
+
+	if err := tx.Create(&rating).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan rating"})
+		return
+	}
+
+	// process tag
+	if body.TagsInput != "" {
+		tagNames := strings.Split(body.TagsInput, ",")
+		var attachedTags []models.Tag
+
+		for _, name := range tagNames {
+			tagName := strings.TrimSpace(name)
+			if tagName == "" {
+				continue
+			}
+
+			var tag models.Tag
+			// find tag or create new
+			if err := tx.FirstOrCreate(&tag, models.Tag{Name: tagName}).Error; err != nil {
+				tx.Rollback()
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses tag"})
+				return
+			}
+			attachedTags = append(attachedTags, tag)
+		}
+
+		// connect Tag with Kafe
+		if err := tx.Model(&cafe).Association("Tags").Replace(attachedTags); err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan relasi tag"})
+			return
+		}
+	}
+
+	tx.Commit()
+
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Kafe berhasil ditambahkan! Silakan beri rating.",
+		"message": "Kafe berhasil dibuat!",
 		"cafe":    cafe,
 	})
 }
 
+// RATE CAFE
 
-// RATE CAFE (Dibuat Sebelumnya)
+// function only called when user want to rate existing cafe
 func RateCafe(c *gin.Context) {
-	// 1. Ambil ID Kafe dari URL dan ID User dari Context
+	// id cafe dri URL
 	cafeIDStr := c.Param("id")
 	cafeID, err := strconv.ParseUint(cafeIDStr, 10, 64)
 	if err != nil {
@@ -56,22 +124,22 @@ func RateCafe(c *gin.Context) {
 		return
 	}
 
-	// Ambil data user dari middleware (RequireAuth)
+	// user data
 	user, exists := c.Get("user")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: User ID tidak ditemukan di context"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 	userID := user.(models.User).ID
 
-	// 2. Tangkap Input Rating dan Tags
+	// get input rating
 	var body struct {
 		AmbienceRating int    `json:"ambience_rating" binding:"required"`
 		ServiceRating  int    `json:"service_rating" binding:"required"`
 		PriceLevel     string `json:"price_level" binding:"required"`
 		MenuVariety    string `json:"menu_variety" binding:"required"`
 		Notes          string `json:"notes"`
-		TagsInput      string `json:"tags_input"` // Tags dalam bentuk string dipisahkan koma
+		TagsInput      string `json:"tags_input"`
 	}
 
 	if c.BindJSON(&body) != nil {
@@ -79,7 +147,7 @@ func RateCafe(c *gin.Context) {
 		return
 	}
 
-	// 3. Simpan Personal Rating ke Database (Relasi 1:N)
+	// personal rating
 	personalRating := models.PersonalRating{
 		UserID:         userID,
 		CafeID:         uint(cafeID),
@@ -95,7 +163,7 @@ func RateCafe(c *gin.Context) {
 		return
 	}
 
-	// 4. Proses Tags (Relasi N:M)
+	// process tag & update if any new tag appear
 	if body.TagsInput != "" {
 		tagNames := strings.Split(body.TagsInput, ",")
 		var attachedTags []models.Tag
@@ -113,22 +181,20 @@ func RateCafe(c *gin.Context) {
 
 		var cafe models.Cafe
 		initializers.DB.First(&cafe, cafeID)
-		
-		// GORM Association: Hubungkan Kafe dengan Tag (Menyimpan ke tabel cafe_tags)
 		initializers.DB.Model(&cafe).Association("Tags").Replace(attachedTags)
 	}
 
-
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Rating dan Tag berhasil disimpan!",
+		"message": "Rating berhasil ditambahkan!",
 		"rating":  personalRating,
 	})
 }
 
-// GET ALL CAFES (Dibuat Sebelumnya & sudah menggunakan Preload)
+// GET ALL CAFES
+
 func GetAllCafes(c *gin.Context) {
 	var cafes []models.Cafe
-	
+	// get cafe + relation
 	result := initializers.DB.Preload("Ratings").Preload("Tags").Find(&cafes)
 
 	if result.Error != nil {
@@ -136,18 +202,13 @@ func GetAllCafes(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"cafes": cafes,
-	})
+	c.JSON(http.StatusOK, gin.H{"cafes": cafes})
 }
 
+//  UPDATE CAFE
 
-// UPDATE CAFE (FITUR BARU: U)
 func UpdateCafe(c *gin.Context) {
-	// 1. Ambil ID Kafe dari URL
 	cafeID := c.Param("id")
-	
-	// 2. Tangkap Input yang akan diupdate
 	var body struct {
 		Name    string
 		Address string
@@ -157,40 +218,31 @@ func UpdateCafe(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal membaca input data"})
 		return
 	}
-	
-	// 3. Cari kafe yang mau diupdate
+
 	var cafe models.Cafe
 	if result := initializers.DB.First(&cafe, cafeID); result.Error != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Kafe tidak ditemukan"})
 		return
 	}
-	
-	// 4. Update data kafe
+
 	initializers.DB.Model(&cafe).Updates(models.Cafe{
 		Name:    body.Name,
 		Address: body.Address,
-		// Kita hanya update Nama dan Alamat di sini.
 	})
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Kafe berhasil diperbarui!",
-		"cafe":    cafe,
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Kafe berhasil diperbarui!", "cafe": cafe})
 }
 
-// DELETE CAFE (FITUR BARU: D - Soft Delete)
+// DELETE CAFE
+
 func DeleteCafe(c *gin.Context) {
-	// 1. Ambil ID Kafe dari URL
 	cafeID := c.Param("id")
-	
-	// 2. Lakukan Soft Delete (GORM mengisi kolom deleted_at)
-	// Catatan: Ini tidak menghapus data secara fisik, hanya menyembunyikannya dari query normal
 	result := initializers.DB.Delete(&models.Cafe{}, cafeID)
-	
+
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kafe: " + result.Error.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus kafe"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Kafe berhasil dihapus (Soft Deleted)"})
+	c.JSON(http.StatusOK, gin.H{"message": "Kafe berhasil dihapus"})
 }
