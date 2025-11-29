@@ -1,148 +1,244 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // PENTING: Untuk navigasi
+import { useNavigate } from 'react-router-dom';
 import CafeCard from '../components/CafeCard';
 import DetailModal from '../components/DetailModal';
 import AddCafeModal from '../components/AddCafeModal';
 
-// Ganti nama fungsi jadi Dashboard
 const Dashboard = () => {
   const [cafes, setCafes] = useState([]);
   const [selectedCafe, setSelectedCafe] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('Semua');
   
-  const navigate = useNavigate(); // Hook untuk pindah halaman
+  const navigate = useNavigate();
 
-  // FETCH DATA DARI GO BACKEND
+  // Fetch Data
   useEffect(() => {
     const fetchCafes = async () => {
-      const token = localStorage.getItem('token'); // Ambil token dari penyimpanan lokal
-
-      // Jika tidak ada token, paksa user login dulu
+      const token = localStorage.getItem('token');
       if (!token) {
         navigate('/login');
         return;
       }
-
       try {
-        // PERUBAHAN 1: URL disesuaikan dengan backend (/api/cafes)
-        // PERUBAHAN 2: Kirim Header Authorization
         const response = await axios.get('http://localhost:8080/cafes', {
-          headers: {
-            Authorization: token // Kirim token JWT ke Go
-          }
+          headers: { Authorization: token }
         });
-        
         setCafes(response.data.cafes); 
       } catch (error) {
-        console.error("Gagal mengambil data kafe:", error);
-        // Jika token expired atau invalid (401), lempar ke login
-        if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token');
-            navigate('/login');
-        }
+        console.error("Gagal ambil data:", error);
+        if (error.response?.status === 401) navigate('/login');
       } finally {
         setLoading(false);
       }
     };
-
     fetchCafes();
   }, [navigate]);
 
-  // Fungsi Logout Sederhana
   const handleLogout = () => {
       localStorage.removeItem('token');
       navigate('/login');
   };
 
+  const filters = ['Semua', 'Kopi Strong', 'Sunyi', 'Aesthetic', '24 Jam'];
+
   return (
-    <div className="min-h-screen pb-20 bg-black text-white"> 
-      {/* Pastikan bg-black agar sesuai tema */}
+    <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
       
-      {/* HEADER */}
-      <header className="bg-black bg-opacity-50 backdrop-blur-md sticky top-0 z-40 border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1DB954] tracking-tight">
-                <i className="fas fa-mug-hot mr-2"></i>Cafetify 
-            </h1>
-            <div className="flex gap-4">
-                {/* profile button */}
-                <button onClick={() => navigate('/profile')} className="text-gray-300 hover:text-[#1DB954]">
-                    <i className="fas fa-user-circle text-2xl"></i>
+      {/* =======================
+          1. SIDEBAR (Kiri) 
+         ======================= */}
+      <aside className="w-[280px] bg-black flex flex-col gap-2 p-2 flex-shrink-0">
+         
+         {/* A. Menu Utama (Home/Search) - Kotak Atas */}
+         <div className="bg-[#121212] rounded-lg p-6 flex flex-col gap-5">
+            <div className="flex items-center gap-2 mb-2">
+                <i className="fas fa-coffee text-2xl text-white"></i>
+                <span className="font-bold text-xl tracking-tight">Cafetify</span>
+            </div>
+            <nav className="flex flex-col gap-5 font-bold text-[#b3b3b3]">
+                <a href="#" className="flex items-center gap-4 text-white transition-colors">
+                   <i className="fas fa-home text-xl w-6 text-center"></i> Home
+                </a>
+                <a href="#" className="flex items-center gap-4 hover:text-white transition-colors">
+                   <i className="fas fa-search text-xl w-6 text-center"></i> Search
+                </a>
+            </nav>
+         </div>
+
+         {/* B. Library Menu - Kotak Bawah (Expand) */}
+         <div className="bg-[#121212] rounded-lg flex-1 flex flex-col overflow-hidden">
+            {/* Library Header */}
+            <div className="p-4 px-6 flex justify-between items-center shadow-md z-10">
+                <button className="flex items-center gap-3 text-[#b3b3b3] hover:text-white font-bold transition">
+                    <i className="fas fa-book text-lg"></i>
+                    <span>Koleksi Kamu</span>
                 </button>
-                <button 
-                  onClick={handleLogout}
-                  className="text-gray-300 hover:text-white font-semibold py-2 px-4 transition"
-                >
-                    Logout
+                <div className="flex gap-2">
+                    <button onClick={() => setIsAddModalOpen(true)} className="text-[#b3b3b3] hover:text-white hover:bg-[#2a2a2a] w-8 h-8 rounded-full flex items-center justify-center transition">
+                        <i className="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            {/* List Menu (Liked Songs & Create Playlist) */}
+            <div className="p-2 overflow-y-auto custom-scrollbar flex-1">
+                {/* Liked Songs Button */}
+                <button className="w-full flex items-center gap-3 p-2 rounded hover:bg-[#1a1a1a] transition group cursor-pointer text-left">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#450af5] to-[#c4efd9] rounded-sm flex items-center justify-center opacity-80 group-hover:opacity-100">
+                        <i className="fas fa-heart text-white"></i>
+                    </div>
+                    <div>
+                        <p className="font-bold text-white">Kafe Favorit</p>
+                        <p className="text-xs text-[#b3b3b3] flex items-center gap-1">
+                            <i className="fas fa-thumbtack text-[10px] text-[#1DB954]"></i> Pinned
+                        </p>
+                    </div>
                 </button>
-                <button 
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="bg-[#1DB954] hover:bg-green-400 text-black font-bold py-2 px-6 rounded-full shadow-lg transform transition hover:scale-105"
-                >
-                    Tambah Kafe
+
+                {/* Add Cafe Button (Shortcut Sidebar) */}
+                <button onClick={() => setIsAddModalOpen(true)} className="w-full flex items-center gap-3 p-2 rounded hover:bg-[#1a1a1a] transition group cursor-pointer text-left mt-2">
+                    <div className="w-12 h-12 bg-[#282828] rounded-sm flex items-center justify-center group-hover:bg-[#3E3E3E]">
+                        <i className="fas fa-plus text-[#b3b3b3] group-hover:text-white"></i>
+                    </div>
+                    <div>
+                        <p className="font-bold text-white">Tambah Kafe</p>
+                        <p className="text-xs text-[#b3b3b3]">Buat data baru</p>
+                    </div>
                 </button>
             </div>
-        </div>
-      </header>
+         </div>
+      </aside>
 
-      {/* MAIN CONTENT (Sama seperti sebelumnya) */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* FILTER SECTION (Sama seperti sebelumnya) */}
-        <div className="flex flex-col md:flex-row gap-4 mb-10 justify-between items-center">
-             {/* ... (Kode Search input & Filter buttons tetap sama) ... */}
-             <div className="relative w-full md:w-1/3">
-                 {/* Placeholder UI Filter Anda */}
-                 <input type="text" placeholder="Cari..." className="w-full py-2 px-4 bg-[#2a2a2a] rounded-full text-white"/>
-             </div>
-        </div>
 
-        {/* GRID DAFTAR KAFE */}
-        <h2 className="text-xl font-bold mb-6 text-white">Koleksi Terbaru</h2>
-        
-        {loading ? (
-           <p className="text-gray-400">Memuat data...</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {cafes.map((cafe) => (
-                <CafeCard 
-                  key={cafe.ID} 
-                  cafe={cafe} 
-                  // Pastikan CafeCard Anda menangani klik ini
-                  onClick={() => setSelectedCafe(cafe)} 
-                />
-              ))}
-          </div>
-        )}
+      {/* =======================
+          2. MAIN CONTENT (Kanan) 
+         ======================= */}
+      <main className="flex-1 bg-[#121212] my-2 mr-2 rounded-lg overflow-y-auto relative custom-scrollbar flex flex-col">
+         
+         {/* A. HEADER (Sticky) */}
+         <header className="h-[64px] px-6 flex items-center justify-between sticky top-0 z-20 bg-[#121212]/95 backdrop-blur-sm">
+            
+            {/* Left: Navigation & Search */}
+            <div className="flex items-center gap-4 flex-1">
+                {/* Nav Arrows */}
+                <div className="flex gap-2">
+                   <button className="w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center cursor-not-allowed opacity-60">
+                      <i className="fas fa-chevron-left"></i>
+                   </button>
+                   <button className="w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center cursor-not-allowed opacity-60">
+                      <i className="fas fa-chevron-right"></i>
+                   </button>
+                </div>
+                
+                {/* Search Bar Panjang (Sesuai Request) */}
+                <div className="relative group w-full max-w-md ml-2 transition-all">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i className="fas fa-search text-[#b3b3b3] group-focus-within:text-white"></i>
+                    </div>
+                    <input 
+                        type="text" 
+                        placeholder="Cari koleksimu..." 
+                        className="bg-[#242424] text-sm text-white rounded-full pl-10 pr-4 py-3 w-full border-none outline-none focus:ring-2 focus:ring-white/20 hover:bg-[#2a2a2a] transition-colors placeholder-[#b3b3b3]"
+                    />
+                </div>
+            </div>
+            
+            {/* Right: Actions & Profile */}
+            <div className="flex items-center gap-4">
+                {/* Tombol Hijau Utama */}
+                <button 
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="bg-white text-black text-sm font-bold px-4 py-2 rounded-full hover:scale-105 hover:bg-[#f2f2f2] transition transform"
+                >
+                    Tambahkan Kafe
+                </button>
+                
+                {/* Profile Icon */}
+                <button 
+                    onClick={() => navigate('/profile')}
+                    className="w-8 h-8 rounded-full bg-[#2a2a2a] p-1 border border-transparent hover:scale-105 transition overflow-hidden"
+                >
+                    <div className="w-full h-full bg-[#535353] rounded-full flex items-center justify-center text-white text-xs">
+                        <i className="fas fa-user"></i>
+                    </div>
+                </button>
+            </div>
+         </header>
+
+         {/* B. SCROLLABLE CONTENT */}
+         <div className="flex-1 px-6 pb-8 pt-2">
+            
+            {/* Filter Chips Section */}
+            <div className="flex gap-2 mb-6 sticky top-[64px] z-10 bg-[#121212] py-2">
+                {filters.map((filter) => (
+                    <button 
+                        key={filter}
+                        onClick={() => setActiveFilter(filter)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+                            activeFilter === filter 
+                            ? 'bg-white text-black' 
+                            : 'bg-[#2a2a2a] text-white hover:bg-[#3E3E3E]'
+                        }`}
+                    >
+                        {filter}
+                    </button>
+                ))}
+            </div>
+
+            {/* Section Title */}
+            <div className="mb-6 flex justify-between items-end">
+                <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">
+                    Koleksi Terbaru
+                </h2>
+                <span className="text-xs font-bold text-[#b3b3b3] hover:underline cursor-pointer uppercase tracking-wider">
+                    Tampilkan Semua
+                </span>
+            </div>
+            
+            {/* GRID CARD KAFE */}
+            {loading ? (
+                <div className="h-40 flex items-center justify-center text-[#b3b3b3]">
+                    <div className="w-8 h-8 border-4 border-[#1DB954] border-t-transparent rounded-full animate-spin mr-3"></div>
+                    Memuat data...
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
+                    {cafes.map((cafe) => (
+                        <CafeCard 
+                            key={cafe.ID} 
+                            cafe={cafe} 
+                            onClick={setSelectedCafe} 
+                        />
+                    ))}
+                    
+                    {/* State Kosong */}
+                    {cafes.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-[#b3b3b3]">
+                            Belum ada kafe. Coba tambahkan sekarang!
+                        </div>
+                    )}
+                </div>
+            )}
+         </div>
       </main>
 
       {/* MODALS */}
       {selectedCafe && (
-        <DetailModal 
-          cafe={selectedCafe} 
-          onClose={() => setSelectedCafe(null)} 
+        <DetailModal cafe={selectedCafe} onClose={() => setSelectedCafe(null)} />
+      )}
+
+      {isAddModalOpen && (
+        <AddCafeModal 
+            onClose={() => setIsAddModalOpen(false)} 
+            onSuccess={() => window.location.reload()}
         />
       )}
 
-        {isAddModalOpen && (
-                <AddCafeModal 
-                onClose={() => setIsAddModalOpen(false)} 
-                onSuccess={() => {
-                    window.location.reload(); 
-                }}
-                />
-            )}
-
     </div>
-                                    
-
-    
   );
-
-
-
 }
 
 export default Dashboard;

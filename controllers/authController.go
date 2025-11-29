@@ -112,13 +112,15 @@ func Login(c *gin.Context) {
 	})
 }
 
-// FITUR 3: view own profile
+// get profile (or view your own profile)
 func GetProfile(c *gin.Context) {
-	user, _ := c.Get("user") // get user from middleware
+	// get user that was set by middleware
+	user, _ := c.Get("user")
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
-// FITUR 4: update profile
+// update profile
+
 func UpdateProfile(c *gin.Context) {
 	userContext, _ := c.Get("user")
 	currentUser := userContext.(models.User)
@@ -133,7 +135,7 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	// Update data
+	// Update data di database
 	initializers.DB.Model(&currentUser).Updates(models.User{
 		Username: body.Username,
 		Email:    body.Email,
@@ -143,4 +145,40 @@ func UpdateProfile(c *gin.Context) {
 		"message": "Profil berhasil diperbarui",
 		"user":    currentUser,
 	})
+}
+
+// change password
+
+func ChangePassword(c *gin.Context) {
+	userContext, _ := c.Get("user")
+	currentUser := userContext.(models.User)
+
+	var body struct {
+		OldPassword string `json:"old_password" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required"`
+	}
+
+	if c.ShouldBindJSON(&body) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Input password tidak lengkap"})
+		return
+	}
+
+	//  check old password
+	err := bcrypt.CompareHashAndPassword([]byte(currentUser.Password), []byte(body.OldPassword))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password lama salah!"})
+		return
+	}
+
+	// hash new password
+	newHash, err := bcrypt.GenerateFromPassword([]byte(body.NewPassword), 10)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses password baru"})
+		return
+	}
+
+	// save the new pw to DB
+	initializers.DB.Model(&currentUser).Update("password", string(newHash))
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password berhasil diubah!"})
 }

@@ -1,113 +1,134 @@
-// src/pages/AuthPage.jsx (Contoh, bisa dipisah jadi Login.jsx dan Register.jsx)
-
 import React, { useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const AuthPage = ({ type }) => { // type: 'login' atau 'register'
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [username, setUsername] = useState(''); // Hanya untuk Register
+    const navigate = useNavigate();
+    const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoading(true);
+        setError('');
         
-        // Ganti dengan URL endpoint Golang Anda
+        // make sure the endpoint matches our golang endpoint
         const endpoint = type === 'login' ? 'http://localhost:8080/login' : 'http://localhost:8080/register';
         
-        const body = type === 'login' 
-            ? { email, password } 
-            : { email, password, username };
-
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-            });
-
-            const data = await response.json();
+            const response = await axios.post(endpoint, formData);
             
-            if (response.ok) {
-                if (data.token) {
-                    localStorage.setItem('token', data.token);
+            if (type === 'login') {
+                // Simpan token ke LocalStorage
+                if (response.data.token) {
+                    localStorage.setItem('token', response.data.token);
+                    navigate('/'); // Redirect ke Dashboard
                 }
-
-                alert(`${type === 'login' ? 'Login' : 'Registrasi'} Berhasil!`);
-
-                window.location.href = '/';
-
             } else {
-                alert(`Gagal: ${data.error}`);
+                alert('Registrasi Berhasil! Silakan Login.');
+                navigate('/login');
             }
-        } catch (error) {
-            console.error("Error saat submit:", error);
-            alert("Terjadi kesalahan jaringan.");
+        } catch (err) {
+            setError(err.response?.data?.error || 'Terjadi kesalahan. Cek koneksi server.');
+        } finally {
+            setLoading(false);
         }
     };
 
+    const isLogin = type === 'login';
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-black">
-            <div className="bg-neutral-900 p-8 rounded-xl shadow-2xl w-full max-w-md">
-                
-                <h2 className="text-3xl font-bold text-white mb-6 text-center">
-                    {type === 'login' ? 'Masuk' : 'Daftar Akun Baru'}
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 font-sans text-white">
+            
+            {/* Header / Logo */}
+            <div className="mb-8 text-center animate-fade-in">
+                <div className="w-16 h-16 bg-[#1DB954] rounded-full flex items-center justify-center mx-auto mb-4 shadow-glow-primary">
+                    <i className="fas fa-mug-hot text-3xl text-black"></i>
+                </div>
+                <h1 className="text-4xl font-space font-bold tracking-tight">Cafetify</h1>
+            </div>
+
+            {/* Card Form */}
+            <div className="bg-[#121212] w-full max-w-md p-8 rounded-xl border border-[#333] shadow-2xl relative overflow-hidden">
+                {/* Background Decoration */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#1DB954] to-blue-500"></div>
+
+                <h2 className="text-2xl font-bold mb-6 text-center">
+                    {isLogin ? 'Login ke Akun' : 'Daftar Akun Baru'}
                 </h2>
-                
+
+                {error && (
+                    <div className="bg-red-500/10 border border-red-500/50 text-red-500 text-sm p-3 rounded mb-4 text-center">
+                        {error}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-4">
                     
-                    {type === 'register' && (
+                    {!isLogin && (
                         <div>
-                            <label className="block text-sm font-medium text-neutral-400 mb-1">Username</label>
-                            <input
+                            <label className="block text-xs font-bold text-[#b3b3b3] mb-1 uppercase">Username</label>
+                            <input 
+                                name="username" 
                                 type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-md text-white placeholder-neutral-500 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Masukkan username Anda"
-                                required
+                                placeholder="Nama kamu"
+                                onChange={handleChange} 
+                                className="w-full bg-[#333] border border-transparent focus:border-[#1DB954] text-white p-3 rounded outline-none transition"
+                                required 
                             />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-sm font-medium text-neutral-400 mb-1">Email</label>
-                        <input
+                        <label className="block text-xs font-bold text-[#b3b3b3] mb-1 uppercase">Email</label>
+                        <input 
+                            name="email" 
                             type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-md text-white placeholder-neutral-500 focus:ring-green-500 focus:border-green-500"
-                            placeholder="user@example.com"
-                            required
+                            placeholder="nama@email.com"
+                            onChange={handleChange} 
+                            className="w-full bg-[#333] border border-transparent focus:border-[#1DB954] text-white p-3 rounded outline-none transition"
+                            required 
                         />
                     </div>
-                    
+
                     <div>
-                        <label className="block text-sm font-medium text-neutral-400 mb-1">Password</label>
-                        <input
+                        <label className="block text-xs font-bold text-[#b3b3b3] mb-1 uppercase">Password</label>
+                        <input 
+                            name="password" 
                             type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-md text-white placeholder-neutral-500 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Minimal 8 karakter"
-                            required
+                            placeholder="Rahasia..."
+                            onChange={handleChange} 
+                            className="w-full bg-[#333] border border-transparent focus:border-[#1DB954] text-white p-3 rounded outline-none transition"
+                            required 
                         />
                     </div>
-                    
-                    <button
-                        type="submit"
-                        className="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-3 mt-6 rounded-full transition duration-300"
+
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="w-full bg-[#1DB954] hover:bg-[#1ed760] text-black font-bold py-3 rounded-full uppercase tracking-widest text-xs transition transform hover:scale-105 mt-6 shadow-lg"
                     >
-                        {type === 'login' ? 'MASUK' : 'DAFTAR'}
+                        {loading ? 'Memproses...' : (isLogin ? 'MASUK' : 'DAFTAR')}
                     </button>
                 </form>
 
-                <p className="text-sm text-neutral-400 mt-4 text-center">
-                    {type === 'login' ? (
-                        <a href="/register" className="text-green-400 hover:underline">Belum punya akun? Daftar</a>
-                    ) : (
-                        <a href="/login" className="text-green-400 hover:underline">Sudah punya akun? Masuk</a>
-                    )}
-                </p>
+                <div className="mt-6 pt-6 border-t border-[#333] text-center">
+                    <p className="text-[#b3b3b3] text-sm">
+                        {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}
+                        <a 
+                            href={isLogin ? "/register" : "/login"} 
+                            className="text-white font-bold ml-1 hover:underline hover:text-[#1DB954]"
+                        >
+                            {isLogin ? "Daftar di sini" : "Login di sini"}
+                        </a>
+                    </p>
+                </div>
             </div>
+            
+            <p className="mt-8 text-xs text-[#555]">© Framework Programming IUP Final Project</p>
         </div>
     );
 };

@@ -57,6 +57,7 @@ func main() {
 		// route for profile
 		protected.GET("/profile", controllers.GetProfile)
 		protected.PUT("/profile", controllers.UpdateProfile)
+		protected.PUT("/change-password", controllers.ChangePassword)
 	}
 
 	r.Run()
