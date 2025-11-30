@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 7%;           
+    --foreground: 0 0% 98%;          
+    
+    /* Card: Dark Grey */
+    --card: 0 0% 10%;                
+    --card-foreground: 0 0% 98%;     
+  
+    --primary: 141 73% 42%;          
+    --primary-foreground: 0 0% 0%;   
+    --primary-glow: 141 73% 52%;     
+    
+    --secondary: 0 0% 98%;         
+    --secondary-foreground: 0 0% 7%; 
+    --secondary-glow: 0 0% 80%;    
+    
+    --muted: 0 0% 15%;               
+    --muted-foreground: 0 0% 65%;    
+    
+    --border: 0 0% 20%;              
+    
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(0 0% 12%));
+    
+    --shadow-glow-primary: 0 0 30px hsl(var(--primary) / 0.3);
+    --shadow-elegant: 0 25px 50px -12px hsl(0 0% 0% / 0.6);
+    
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer components {
+  
+  .text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .cafe-card {
+    background: var(--gradient-card);
+    transition: var(--transition-smooth);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .cafe-card:hover {
+    transform: translateY(-8px) scale(1.02); 
+    border-color: hsl(var(--primary));       
+    box-shadow: var(--shadow-glow-primary), var(--shadow-elegant); 
+  }
+
+  .hover-lift {
+    transition: var(--transition-smooth);
+  }
+  .hover-lift:hover {
+    transform: translateY(-5px);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 12px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: hsla(0,0%,100%,.3);
+    border-radius: 20px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: hsla(0,0%,100%,.5);
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
