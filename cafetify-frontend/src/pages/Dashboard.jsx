@@ -12,10 +12,25 @@ const Dashboard = () => {
     const [cafeToEdit, setCafeToEdit] = useState(null); // State for editing
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('Semua');
+    const [searchQuery, setSearchQuery] = useState(''); // State for search
+    const [tags, setTags] = useState([]); // State for dynamic tags
 
     const navigate = useNavigate();
 
-    // Fetch Data
+    // Fetch Tags
+    useEffect(() => {
+        const fetchTags = async () => {
+            try {
+                const response = await axios.get('http://localhost:8080/tags');
+                setTags(response.data.tags);
+            } catch (error) {
+                console.error("Gagal ambil tags:", error);
+            }
+        };
+        fetchTags();
+    }, []);
+
+    // Fetch Cafes (Triggered by activeFilter change)
     useEffect(() => {
         const fetchCafes = async () => {
             const token = localStorage.getItem('token');
@@ -24,7 +39,16 @@ const Dashboard = () => {
                 return;
             }
             try {
-                const response = await axios.get('http://localhost:8080/cafes', {
+                setLoading(true);
+                // Add tag filter and search query
+                const queryParams = [];
+                if (activeFilter !== 'Semua') queryParams.push(`tag=${encodeURIComponent(activeFilter)}`);
+                if (searchQuery) queryParams.push(`search=${encodeURIComponent(searchQuery)}`);
+
+                const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+                const url = `http://localhost:8080/cafes${queryString}`;
+
+                const response = await axios.get(url, {
                     headers: { Authorization: token }
                 });
                 setCafes(response.data.cafes);
@@ -36,14 +60,15 @@ const Dashboard = () => {
             }
         };
         fetchCafes();
-    }, [navigate]);
+    }, [navigate, activeFilter, searchQuery]);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/login');
     };
 
-    const filters = ['Semua', 'Kopi Strong', 'Sunyi', 'Aesthetic', '24 Jam'];
+    // Combine 'Semua' with fetched tags
+    const filters = ['Semua', ...tags.map(t => t.name)];
 
     return (
         <div className="flex h-screen bg-black overflow-hidden font-sans text-white">
@@ -142,6 +167,8 @@ const Dashboard = () => {
                             <input
                                 type="text"
                                 placeholder="Cari koleksimu..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 className="bg-[#242424] text-sm text-white rounded-full pl-10 pr-4 py-3 w-full border-none outline-none focus:ring-2 focus:ring-white/20 hover:bg-[#2a2a2a] transition-colors placeholder-[#b3b3b3]"
                             />
                         </div>
@@ -172,20 +199,43 @@ const Dashboard = () => {
                 {/* B. SCROLLABLE CONTENT */}
                 <div className="flex-1 px-6 pb-8 pt-2">
 
-                    {/* Filter Chips Section */}
+                    {/* Filter Dropdown Section */}
                     <div className="flex gap-2 mb-6 sticky top-[64px] z-10 bg-[#121212] py-2">
-                        {filters.map((filter) => (
-                            <button
-                                key={filter}
-                                onClick={() => setActiveFilter(filter)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${activeFilter === filter
-                                        ? 'bg-white text-black'
-                                        : 'bg-[#2a2a2a] text-white hover:bg-[#3E3E3E]'
-                                    }`}
-                            >
-                                {filter}
+                        <div className="relative group">
+                            <button className="flex items-center gap-2 bg-[#2a2a2a] text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-[#3E3E3E] transition-all">
+                                <i className="fas fa-filter text-[#b3b3b3]"></i>
+                                <span>{activeFilter === 'Semua' ? 'Filter Tags' : activeFilter}</span>
+                                <i className="fas fa-chevron-down text-xs ml-1"></i>
                             </button>
-                        ))}
+
+                            {/* Dropdown Menu */}
+                            <div className="absolute top-full left-0 pt-2 w-48 hidden group-hover:block z-50">
+                                <div className="bg-[#282828] rounded-lg shadow-xl overflow-hidden border border-[#3E3E3E]">
+                                    <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                        {filters.map((filter) => (
+                                            <button
+                                                key={filter}
+                                                onClick={() => setActiveFilter(filter)}
+                                                className={`w-full text-left px-4 py-3 text-sm font-bold hover:bg-[#3E3E3E] transition-colors ${activeFilter === filter ? 'text-[#1DB954]' : 'text-white'}`}
+                                            >
+                                                {filter}
+                                                {activeFilter === filter && <i className="fas fa-check float-right text-[#1DB954]"></i>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Reset Filter Button (Only show if filter is active) */}
+                        {activeFilter !== 'Semua' && (
+                            <button
+                                onClick={() => setActiveFilter('Semua')}
+                                className="bg-[#2a2a2a] text-[#b3b3b3] px-3 py-2 rounded-full text-xs font-bold hover:text-white hover:bg-[#3E3E3E] transition-all"
+                            >
+                                <i className="fas fa-times"></i> Clear
+                            </button>
+                        )}
                     </div>
 
                     {/* Section Title */}

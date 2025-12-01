@@ -195,8 +195,23 @@ func RateCafe(c *gin.Context) {
 
 func GetAllCafes(c *gin.Context) {
 	var cafes []models.Cafe
-	// get cafe + relation
-	result := initializers.DB.Preload("Ratings").Preload("Tags").Find(&cafes)
+	tagFilter := c.Query("tag")
+	searchQuery := c.Query("search")
+
+	db := initializers.DB.Preload("Ratings").Preload("Tags")
+
+	if tagFilter != "" && tagFilter != "Semua" {
+		// Filter by tag name using join
+		db = db.Joins("JOIN cafe_tags ON cafe_tags.cafe_id = cafes.id").
+			Joins("JOIN tags ON tags.id = cafe_tags.tag_id").
+			Where("tags.name = ?", tagFilter)
+	}
+
+	if searchQuery != "" {
+		db = db.Where("name LIKE ?", "%"+searchQuery+"%")
+	}
+
+	result := db.Find(&cafes)
 
 	if result.Error != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data kafe"})

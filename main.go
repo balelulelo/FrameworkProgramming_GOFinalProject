@@ -41,6 +41,7 @@ func main() {
 	r.POST("/register", controllers.Register)
 	r.POST("/login", controllers.Login)
 	r.GET("/cafes", controllers.GetAllCafes)
+	r.GET("/tags", controllers.GetAllTags)
 
 	// ---------- route protected
 
