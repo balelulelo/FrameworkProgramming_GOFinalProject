@@ -27,13 +27,13 @@ const Profile = () => {
         fetchProfile();
     }, [navigate]);
 
-    // Handle Logout (PENTING)
+    // Handle Logout
     const handleLogout = () => {
-        localStorage.removeItem('token'); // Hapus token
-        navigate('/login'); // Lempar ke login
+        localStorage.removeItem('token'); // delete token
+        navigate('/login'); // login
     };
 
-    // Update Info Dasar
+    // Update informations
     const handleUpdateInfo = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -43,15 +43,15 @@ const Profile = () => {
                 { username: user.username, email: user.email }, 
                 { headers: { Authorization: token } }
             );
-            alert('Profil berhasil diperbarui!');
+            alert('Succecssfully updated profile!');
         } catch (err) {
-            alert('Gagal update profil.');
+            alert('Failed to update profile.');
         } finally {
             setLoading(false);
         }
     };
 
-    // Ganti Password
+    // change pssword
     const handleChangePassword = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -91,8 +91,8 @@ const Profile = () => {
 
                 {/* Tabs */}
                 <div className="flex justify-center gap-8 mt-4 border-b border-[#333] px-8">
-                    <button onClick={() => setActiveTab('info')} className={tabStyle(activeTab === 'info')}>Edit Profil</button>
-                    <button onClick={() => setActiveTab('password')} className={tabStyle(activeTab === 'password')}>Ganti Password</button>
+                    <button onClick={() => setActiveTab('info')} className={tabStyle(activeTab === 'info')}>Edit Profile</button>
+                    <button onClick={() => setActiveTab('password')} className={tabStyle(activeTab === 'password')}>Change Password</button>
                 </div>
 
                 {/* Forms */}
@@ -108,21 +108,21 @@ const Profile = () => {
                                 <input value={user.email} onChange={(e) => setUser({...user, email: e.target.value})} className={inputStyle} />
                             </div>
                             <button type="submit" disabled={loading} className="w-full bg-white text-black font-bold py-3 rounded-full hover:scale-105 transition mt-4">
-                                {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                {loading ? 'Saving...' : 'Save Changes'}
                             </button>
                         </form>
                     ) : (
                         <form onSubmit={handleChangePassword} className="space-y-4 animate-fade-in">
                              <div>
-                                <label className={labelStyle}>Password Lama</label>
+                                <label className={labelStyle}>Old Password</label>
                                 <input type="password" value={passwords.old_password} onChange={(e) => setPasswords({...passwords, old_password: e.target.value})} className={inputStyle} required />
                             </div>
                             <div>
-                                <label className={labelStyle}>Password Baru</label>
+                                <label className={labelStyle}>New Password</label>
                                 <input type="password" value={passwords.new_password} onChange={(e) => setPasswords({...passwords, new_password: e.target.value})} className={inputStyle} required />
                             </div>
                             <button type="submit" disabled={loading} className="w-full bg-[#1DB954] text-black font-bold py-3 rounded-full hover:scale-105 transition mt-4">
-                                {loading ? 'Memproses...' : 'Ubah Password'}
+                                {loading ? 'Processing...' : 'Change Password'}
                             </button>
                         </form>
                     )}
@@ -130,7 +130,7 @@ const Profile = () => {
                     {/* Footer Actions */}
                     <div className="mt-8 pt-6 border-t border-[#333] flex justify-between items-center">
                         <button onClick={() => navigate('/')} className="text-sm text-gray-400 hover:text-white transition">
-                            <i className="fas fa-arrow-left mr-2"></i> Kembali ke Dashboard
+                            <i className="fas fa-arrow-left mr-2"></i> Back to Dashboard
                         </button>
                         
                         <button onClick={handleLogout} className="text-sm text-red-500 font-bold hover:text-red-400 transition border border-red-500/30 px-4 py-2 rounded-full hover:bg-red-500/10">

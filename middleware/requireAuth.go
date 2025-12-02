@@ -14,60 +14,61 @@ import (
 )
 
 func RequireAuth(c *gin.Context) {
-	// 1. Coba ambil token dari Cookie
+	// get token from cookie
 	tokenString, _ := c.Cookie("Authorization")
 
-	// ika di Cookie kosong, coba ambil dari Header Authorization
+	// if cookie is empty, check Authorization header
 	if tokenString == "" {
 		authHeader := c.GetHeader("Authorization")
-		// Format header biasanya: "Bearer <token>" atau langsung "<token>"
-		// Kita ambil tokennya saja
+
+		// format for header: "Bearer <token>"
+		// get the token part only
 		if authHeader != "" {
 			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
 			tokenString = strings.TrimSpace(tokenString)
 		}
 	}
 
-	// jika masih kosong, tolak akses
+	// if token is still empty, return unauthorized
 	if tokenString == "" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Token tidak ditemukan"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized: Token not found"})
 		return
 	}
 
-	// 2. Validasi/Decode Token
+	// 2. Validate Token
 	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Pastikan metode signing-nya benar (HMAC)
+		// make sure that the token method conform to "SigningMethodHMAC"
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		// Kembalikan kunci rahasia untuk membuka segel token
+		// return the secret signing key
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
 
-	// 3. Cek apakah Token Valid & Belum Kadaluarsa
+	// check if token is valid
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		// Cek kadaluarsa
+		// check token expiration
 		if float64(time.Now().Unix()) > claims["exp"].(float64) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Sesi habis, silakan login ulang"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session Expired, Please Login Again"})
 			return
 		}
 
-		// 4. Cari User di Database berdasarkan ID di token ("sub")
+		// find user with token sub (user ID)
 		var user models.User
 		initializers.DB.First(&user, claims["sub"])
 
 		if user.ID == 0 {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User tidak ditemukan"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			return
 		}
 
-		// 5. Simpan data User ke Context (agar bisa dipakai di Controller nanti)
+		// save user to context
 		c.Set("user", user)
 
-		// Lanjut ke Controller selanjutnya
+		// continue to next handler
 		c.Next()
 
 	} else {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Token tidak valid"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Token"})
 	}
 }

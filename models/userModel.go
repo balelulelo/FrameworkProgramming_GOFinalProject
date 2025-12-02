@@ -3,14 +3,14 @@ package models
 import "gorm.io/gorm"
 
 type User struct {
-	gorm.Model // Otomatis bikin ID, CreatedAt, UpdatedAt, DeletedAt
+	gorm.Model // Automatically create ID, CreatedAt, UpdatedAt, DeletedAt
 
-	// `gorm:"unique"` -> Email tidak boleh kembar
-	// `json:"email"` -> Saat dikirim ke Postman, key-nya jadi huruf kecil "email"
-	Email    string `gorm:"unique" json:"email"`
-	
-	// Password tidak kita tampilkan di JSON response demi keamanan (opsional, tapi good practice)
-	Password string `json:"-"` 
-	
+	// `gorm:"unique"` -> email cant be duplicated in DB
+	// `json:"email"` -> change the key to "email" when sent to postman
+	Email string `gorm:"unique" json:"email"`
+
+	// Password is not shown in JSON Response for security reasons
+	Password string `json:"-"`
+
 	Username string `json:"username"`
 }

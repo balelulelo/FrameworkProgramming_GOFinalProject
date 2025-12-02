@@ -20,8 +20,8 @@ func init() {
 func main() {
 	r := gin.Default()
 
-	// --- TAMBAHAN PENTING: CONFIG CORS ---
-	// Agar React (localhost:5173) boleh ngomong sama Go (localhost:8080)
+	// --- CORS CONFIG ---
+	// biar React (:5173) bisa connect sm Go (:8080)
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173"}, // sesuain sm port React kamu
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},

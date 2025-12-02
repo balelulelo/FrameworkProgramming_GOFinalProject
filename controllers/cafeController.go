@@ -198,7 +198,7 @@ func GetAllCafes(c *gin.Context) {
 	tagFilter := c.Query("tag")
 	searchQuery := c.Query("search")
 
-	db := initializers.DB.Preload("Ratings").Preload("Tags")
+	db := initializers.DB.Preload("Ratings").Preload("Tags").Preload("User")
 
 	if tagFilter != "" && tagFilter != "Semua" {
 		// Filter by tag name using join
@@ -226,7 +226,7 @@ func GetAllCafes(c *gin.Context) {
 func UpdateCafe(c *gin.Context) {
 	cafeID := c.Param("id")
 
-	// Struct body yang lebih lengkap (sama seperti CreateCafe)
+	// body struct with more fields (like CreateCafe)
 	var body struct {
 		Name      string  `json:"name"`
 		Address   string  `json:"address"`

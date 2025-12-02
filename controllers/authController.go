@@ -13,10 +13,10 @@ import (
 )
 
 // ---------------------------
-// FITUR 1: REGISTRASI USER
+// user registration
 // ---------------------------
 func Register(c *gin.Context) {
-	// 1. Tangkap Input dari Body JSON
+	// get input from json body
 	var body struct {
 		Username string
 		Email    string
@@ -28,19 +28,19 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// 2. Hash Password (Acak Password)
-	// Kita tidak boleh menyimpan password asli di database demi keamanan.
+	// Hash Password
+	// For security, we must not store the plain password in the database.
 	hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal meng-hash password"})
 		return
 	}
 
-	// 3. Simpan User ke Database
+	// Save user to database
 	user := models.User{
 		Username: body.Username,
 		Email:    body.Email,
-		Password: string(hash), // Simpan hasil hash, bukan password asli
+		Password: string(hash), // Save hash instead of plain password
 	}
 
 	result := initializers.DB.Create(&user)
@@ -50,15 +50,15 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// 4. Berikan Respon Sukses
+	// Send Success Response
 	c.JSON(http.StatusOK, gin.H{"message": "Registrasi berhasil! Silakan login."})
 }
 
 // ---------------------------
-// FITUR 2: LOGIN USER
+// USER LOGIN
 // ---------------------------
 func Login(c *gin.Context) {
-	// 1. Tangkap Input (Email & Password)
+	// input from json body (email and pw)
 	var body struct {
 		Email    string
 		Password string
@@ -69,7 +69,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 2. Cari User berdasarkan Email
+	// find user based on email
 	var user models.User
 	initializers.DB.First(&user, "email = ?", body.Email)
 
@@ -78,37 +78,36 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 3. Cek Password (Bandingkan Hash)
+	// check password by comparing the hash
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email atau password salah"})
 		return
 	}
 
-	// 4. Buat JWT Token (Kunci Akses)
-	// Token ini berlaku selama 30 hari
+	// create JWT token (access)
+	// only available for 30 days
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": user.ID,                                    // Subject (ID User)
-		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(), // Kadaluarsa 30 hari
+		"exp": time.Now().Add(time.Hour * 24 * 30).Unix(), // expires in 30 days
 	})
 
-	// Tanda tangani token dengan Rahasia Dapur kita (.env)
+	// Sign the  token with our JWT_SECRET
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
 		return
 	}
 
-	// 5. Kirim Token lewat Cookie
-	// "Authorization" adalah nama cookie-nya
-	// 3600 * 24 * 30 = 30 hari dalam detik
+	// send token in cookie
+
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("Authorization", tokenString, 3600*24*30, "", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login berhasil!",
-		"token":   tokenString, // Kita kirim juga di body untuk testing Postman
+		"token":   tokenString, // send to body as well to test via Postman
 	})
 }
 

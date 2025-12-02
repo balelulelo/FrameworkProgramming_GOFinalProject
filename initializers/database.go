@@ -8,19 +8,19 @@ import (
 	"gorm.io/gorm"
 )
 
-// Variabel Global 'DB' agar bisa diakses oleh controller manapun nanti
+// Global variable 'DB' so it can be accessed by any controller later
 var DB *gorm.DB
 
 func ConnectToDB() {
 	var err error
-	// Mengambil string koneksi dari file .env
+	// get connection string from .env file
 	dsn := os.Getenv("DB_URL")
-	
-	// Membuka koneksi ke MySQL menggunakan GORM
+
+	// Open connection to MySQL using GORM
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
-	// Pengecekan Error: Jika gagal konek, matikan aplikasi (Panic)
+	// Error Checking: If connection fails, terminate the application (Panic)
 	if err != nil {
-		log.Fatal("Gagal terhubung ke Database! Cek apakah XAMPP nyala & nama DB benar.")
+		log.Fatal("Failed to connect to Database! Check if XAMPP is on and DB name is correct .")
 	}
 }

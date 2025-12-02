@@ -5,7 +5,7 @@ import (
 )
 
 // ==========================================
-// 1. TABEL CAFE (Data Faktual)
+// 1. TABEL CAFE
 // ==========================================
 type Cafe struct {
 	gorm.Model // ID, CreatedAt, UpdatedAt, DeletedAt
@@ -18,18 +18,19 @@ type Cafe struct {
 	// Foreign Key
 	UserID uint `json:"user_id"`
 
-	// --- RELASI ---
+	// --- Relations ---
 
-	// One-to-Many: Satu Cafe punya banyak Rating
+	User User `gorm:"foreignKey:UserID" json:"user"`
+
+	// One-to-Many: One cafe can have many Personal Ratings
 	Ratings []PersonalRating `gorm:"foreignKey:CafeID" json:"ratings"`
 
-	// Many-to-Many: Satu Cafe punya banyak Tag
-	// GORM akan otomatis membuat tabel 'cafe_tags'
+	// Many-to-Many: Cafe can have many Tags
 	Tags []Tag `gorm:"many2many:cafe_tags;" json:"tags"`
 }
 
 // ==========================================
-// 2. TABEL PERSONAL RATING (Data Subjektif)
+// 2. TABEL PERSONAL RATING
 // ==========================================
 type PersonalRating struct {
 	gorm.Model
@@ -41,20 +42,20 @@ type PersonalRating struct {
 	// Detail Rating
 	AmbienceRating int    `gorm:"not null" json:"ambience_rating"`
 	ServiceRating  int    `gorm:"not null" json:"service_rating"`
-	PriceLevel     string `gorm:"type:varchar(50)" json:"price_level"`  // Murah/Sedang/Mahal
-	MenuVariety    string `gorm:"type:varchar(50)" json:"menu_variety"` // Minim/Lengkap
+	PriceLevel     string `gorm:"type:varchar(50)" json:"price_level"`
+	MenuVariety    string `gorm:"type:varchar(50)" json:"menu_variety"`
 	Notes          string `gorm:"type:text" json:"notes"`
 }
 
 // ==========================================
-// 3. TABEL TAG (Label)
+// 3. TABEL TAG
 // ==========================================
 type Tag struct {
 	gorm.Model
 	Name string `gorm:"type:varchar(100);unique;not null" json:"name"`
 }
 
-// Override nama tabel untuk struct Cafe
+// Override table name for cafe
 func (Cafe) TableName() string {
 	return "cafes"
 }
