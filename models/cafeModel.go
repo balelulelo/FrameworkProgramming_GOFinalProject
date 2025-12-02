@@ -12,8 +12,6 @@ type Cafe struct {
 
 	Name      string  `gorm:"type:varchar(255);not null" json:"name"`
 	Address   string  `gorm:"type:text" json:"address"`
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
 
 	// Foreign Key
 	UserID uint `json:"user_id"`

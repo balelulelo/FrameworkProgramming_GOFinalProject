@@ -17,8 +17,6 @@ func CreateCafe(c *gin.Context) {
 	var body struct {
 		Name      string  `json:"name" binding:"required"`
 		Address   string  `json:"address" binding:"required"`
-		Latitude  float64 `json:"latitude"`
-		Longitude float64 `json:"longitude"`
 
 		AmbienceRating int    `json:"ambience_rating" binding:"required"`
 		ServiceRating  int    `json:"service_rating" binding:"required"`
@@ -48,8 +46,6 @@ func CreateCafe(c *gin.Context) {
 	cafe := models.Cafe{
 		Name:      body.Name,
 		Address:   body.Address,
-		Latitude:  body.Latitude,
-		Longitude: body.Longitude,
 		UserID:    userID, // Save the owner
 	}
 
@@ -230,8 +226,6 @@ func UpdateCafe(c *gin.Context) {
 	var body struct {
 		Name      string  `json:"name"`
 		Address   string  `json:"address"`
-		Latitude  float64 `json:"latitude"`
-		Longitude float64 `json:"longitude"`
 
 		AmbienceRating int    `json:"ambience_rating"`
 		ServiceRating  int    `json:"service_rating"`
@@ -268,8 +262,6 @@ func UpdateCafe(c *gin.Context) {
 	if err := tx.Model(&cafe).Updates(map[string]interface{}{
 		"Name":      body.Name,
 		"Address":   body.Address,
-		"Latitude":  body.Latitude,
-		"Longitude": body.Longitude,
 	}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal update kafe"})
