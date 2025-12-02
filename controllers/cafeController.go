@@ -225,7 +225,7 @@ func GetAllCafes(c *gin.Context) {
 
 func UpdateCafe(c *gin.Context) {
 	cafeID := c.Param("id")
-	
+
 	// Struct body yang lebih lengkap (sama seperti CreateCafe)
 	var body struct {
 		Name      string  `json:"name"`
@@ -319,7 +319,7 @@ func UpdateCafe(c *gin.Context) {
 			}
 			attachedTags = append(attachedTags, tag)
 		}
-		
+
 		// Replace tags
 		if err := tx.Model(&cafe).Association("Tags").Replace(attachedTags); err != nil {
 			tx.Rollback()
@@ -337,7 +337,7 @@ func UpdateCafe(c *gin.Context) {
 
 func DeleteCafe(c *gin.Context) {
 	cafeID := c.Param("id")
-	
+
 	// Check ownership before delete
 	var cafe models.Cafe
 	if err := initializers.DB.First(&cafe, cafeID).Error; err != nil {

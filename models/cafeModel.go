@@ -57,4 +57,8 @@ type Tag struct {
 // Override nama tabel untuk struct Cafe
 func (Cafe) TableName() string {
 	return "cafes"
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 198974608484380dd715a35463ea4b6bf927d955
