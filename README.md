@@ -6,4 +6,7 @@ Muhammad Iqbal Shafarel - 5025231080
 
 Muhammad Rizqy Hidayat - 5025231161
 
-## IDEA TOPIC: Cafetify - 
+
+## IDEA TOPIC: Cafetify - a digital directory where users can discover, share, and review cafes.
+
+Video demo link: https://youtu.be/jrbDIqTV43Q
