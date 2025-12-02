@@ -19,7 +19,7 @@ type Cafe struct {
 	UserID uint `json:"user_id"`
 
 	// --- RELASI ---
-	
+
 	// One-to-Many: Satu Cafe punya banyak Rating
 	Ratings []PersonalRating `gorm:"foreignKey:CafeID" json:"ratings"`
 
@@ -39,11 +39,11 @@ type PersonalRating struct {
 	CafeID uint `json:"cafe_id"`
 
 	// Detail Rating
-	AmbienceRating int    `gorm:"not null" json:"ambience_rating"` 
+	AmbienceRating int    `gorm:"not null" json:"ambience_rating"`
 	ServiceRating  int    `gorm:"not null" json:"service_rating"`
-	PriceLevel     string `gorm:"type:varchar(50)" json:"price_level"`   // Murah/Sedang/Mahal
-	MenuVariety    string `gorm:"type:varchar(50)" json:"menu_variety"`  // Minim/Lengkap
-	Notes          string `gorm:"type:text" json:"notes"` 
+	PriceLevel     string `gorm:"type:varchar(50)" json:"price_level"`  // Murah/Sedang/Mahal
+	MenuVariety    string `gorm:"type:varchar(50)" json:"menu_variety"` // Minim/Lengkap
+	Notes          string `gorm:"type:text" json:"notes"`
 }
 
 // ==========================================
@@ -57,8 +57,4 @@ type Tag struct {
 // Override nama tabel untuk struct Cafe
 func (Cafe) TableName() string {
 	return "cafes"
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 198974608484380dd715a35463ea4b6bf927d955
